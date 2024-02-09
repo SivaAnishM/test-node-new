@@ -3,18 +3,49 @@ const route = express.Router();
 
 const coodsModel = require("./coodsModel");
 
-route.post("/api/postDummyData", async (req, res) => {
-  // console.log("Received data from background task:",);
-  // Handle the data as needed
-  const data = await coodsModel.create(req.body[0].coords);
-  console.log(req.body[0].coords);
-  res.status(200).send({ data: data, msg: "Data received successfully" });
+route.post("/coords/postData", async (req, res) => {
+  let { email, date } = req.query;
+
+  const updatedDocument = await coodsModel.findOneAndUpdate(
+    { email: email },
+    {
+      $push: {
+        [`Location.${date}`]: req.body[0].coords,
+      },
+    },
+    { new: true }
+  );
+  if (updatedDocument) {
+    console.log("data added successfully", date);
+  }
+  res.status(200).send({ msg: "Data received successfullyy" });
 });
 
-route.get("/api/getDummyData", async (req, res) => {
-  let { code } = req.query;
-  console.log(code);
-  const data = await coodsModel.find({ code: code });
+route.get("/coords/getData", async (req, res) => {
+  let { email } = req.query;
+  const data = await coodsModel.findOne({ email: email });
+  console.log("coords data send successfully");
+  return res.status(200).send({ data: data });
+});
+
+route.post("/signup", async (req, res) => {
+  let { email } = req.query;
+  const existingUser = await coodsModel.findOne({ email: email });
+  if (existingUser) {
+    return res
+      .status(200)
+      .send({ status: "OK", message: "Email already exists" });
+  } else {
+    const body = { email: email, Location: {} };
+    const data = await coodsModel.create(body);
+    console.log("signup successfully");
+    res.status(200).send({ status: "OK", data: data });
+  }
+});
+
+route.get("/getAllData", async (req, res) => {
+  const data = await coodsModel.find();
+  console.log("All data send successfully");
   return res.status(200).send({ data: data });
 });
 
